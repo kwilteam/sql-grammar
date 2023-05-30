@@ -1,3 +1,3 @@
-package sqlite
+package sql_grammar
 
 //go:generate ./generate.sh
