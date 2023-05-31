@@ -41,175 +41,15 @@ sql_stmt_list:
     SCOL* sql_stmt (SCOL+ sql_stmt)* SCOL*
 ;
 
-sql_stmt: (EXPLAIN_ (QUERY_ PLAN_)?)? (
-        alter_table_stmt
-        | analyze_stmt
-        | attach_stmt
-        | begin_stmt
-        | commit_stmt
-        | create_index_stmt
-        | create_table_stmt
-        | create_trigger_stmt
-        | create_view_stmt
-        | create_virtual_table_stmt
-        | delete_stmt
-        | detach_stmt
-        | drop_stmt
+sql_stmt: (
+        delete_stmt
         | insert_stmt
-        | pragma_stmt
-        | reindex_stmt
-        | release_stmt
-        | rollback_stmt
-        | savepoint_stmt
         | select_stmt
         | update_stmt
-        | update_stmt_limited
-        | vacuum_stmt
     )
-;
-
-alter_table_stmt:
-    ALTER_ TABLE_ (schema_name DOT)? table_name (
-        RENAME_ (
-            TO_ new_table_name = table_name
-            | COLUMN_? old_column_name = column_name TO_ new_column_name = column_name
-        )
-        | ADD_ COLUMN_? column_def
-        | DROP_ COLUMN_? column_name
-    )
-;
-
-analyze_stmt:
-    ANALYZE_ (schema_name | (schema_name DOT)? table_or_index_name)?
-;
-
-attach_stmt:
-    ATTACH_ DATABASE_? expr AS_ schema_name
-;
-
-begin_stmt:
-    BEGIN_ (DEFERRED_ | IMMEDIATE_ | EXCLUSIVE_)? (
-        TRANSACTION_ transaction_name?
-    )?
-;
-
-commit_stmt: (COMMIT_ | END_) TRANSACTION_?
-;
-
-rollback_stmt:
-    ROLLBACK_ TRANSACTION_? (TO_ SAVEPOINT_? savepoint_name)?
-;
-
-savepoint_stmt:
-    SAVEPOINT_ savepoint_name
-;
-
-release_stmt:
-    RELEASE_ SAVEPOINT_? savepoint_name
-;
-
-create_index_stmt:
-    CREATE_ UNIQUE_? INDEX_ (IF_ NOT_ EXISTS_)? (schema_name DOT)? index_name ON_ table_name OPEN_PAR
-        indexed_column (COMMA indexed_column)* CLOSE_PAR (WHERE_ expr)?
 ;
 
 indexed_column: column_name
-;
-
-create_table_stmt:
-    CREATE_ (TEMP_ | TEMPORARY_)? TABLE_ (IF_ NOT_ EXISTS_)? (
-        schema_name DOT
-    )? table_name (
-        OPEN_PAR column_def (COMMA column_def)*? (COMMA table_constraint)* CLOSE_PAR (
-            WITHOUT_ row_ROW_ID = IDENTIFIER
-        )?
-        | AS_ select_stmt
-    )
-;
-
-column_def:
-    column_name type_name? column_constraint*
-;
-
-type_name:
-    name+? (
-        OPEN_PAR signed_number CLOSE_PAR
-        | OPEN_PAR signed_number COMMA signed_number CLOSE_PAR
-    )?
-;
-
-column_constraint: (CONSTRAINT_ name)? (
-        (PRIMARY_ KEY_ asc_desc? conflict_clause? AUTOINCREMENT_?)
-        | (NOT_? NULL_ | UNIQUE_) conflict_clause?
-        | CHECK_ OPEN_PAR expr CLOSE_PAR
-        | DEFAULT_ (signed_number | literal_value | OPEN_PAR expr CLOSE_PAR)
-        | COLLATE_ collation_name
-        | foreign_key_clause
-        | (GENERATED_ ALWAYS_)? AS_ OPEN_PAR expr CLOSE_PAR (
-            STORED_
-            | VIRTUAL_
-        )?
-    )
-;
-
-signed_number: (PLUS | MINUS)? NUMERIC_LITERAL
-;
-
-table_constraint: (CONSTRAINT_ name)? (
-        (PRIMARY_ KEY_ | UNIQUE_) OPEN_PAR indexed_column (
-            COMMA indexed_column
-        )* CLOSE_PAR conflict_clause?
-        | CHECK_ OPEN_PAR expr CLOSE_PAR
-        | FOREIGN_ KEY_ OPEN_PAR column_name (COMMA column_name)* CLOSE_PAR foreign_key_clause
-    )
-;
-
-foreign_key_clause:
-    REFERENCES_ foreign_table (
-        OPEN_PAR column_name (COMMA column_name)* CLOSE_PAR
-    )? (
-        ON_ (DELETE_ | UPDATE_) (
-            SET_ (NULL_ | DEFAULT_)
-            | CASCADE_
-            | RESTRICT_
-            | NO_ ACTION_
-        )
-        | MATCH_ name
-    )* (NOT_? DEFERRABLE_ (INITIALLY_ (DEFERRED_ | IMMEDIATE_))?)?
-;
-
-conflict_clause:
-    ON_ CONFLICT_ (
-        ROLLBACK_
-        | ABORT_
-        | FAIL_
-        | IGNORE_
-        | REPLACE_
-    )
-;
-
-create_trigger_stmt:
-    CREATE_ (TEMP_ | TEMPORARY_)? TRIGGER_ (IF_ NOT_ EXISTS_)? (
-        schema_name DOT
-    )? trigger_name (BEFORE_ | AFTER_ | INSTEAD_ OF_)? (
-        DELETE_
-        | INSERT_
-        | UPDATE_ (OF_ column_name ( COMMA column_name)*)?
-    ) ON_ table_name (FOR_ EACH_ ROW_)? (WHEN_ expr)? BEGIN_ (
-        (update_stmt | insert_stmt | delete_stmt | select_stmt) SCOL
-    )+ END_
-;
-
-create_view_stmt:
-    CREATE_ (TEMP_ | TEMPORARY_)? VIEW_ (IF_ NOT_ EXISTS_)? (
-        schema_name DOT
-    )? view_name (OPEN_PAR column_name (COMMA column_name)* CLOSE_PAR)? AS_ select_stmt
-;
-
-create_virtual_table_stmt:
-    CREATE_ VIRTUAL_ TABLE_ (IF_ NOT_ EXISTS_)? (schema_name DOT)? table_name USING_ module_name (
-        OPEN_PAR module_argument (COMMA module_argument)* CLOSE_PAR
-    )?
 ;
 
 cte_table_name:
@@ -229,16 +69,6 @@ delete_stmt:
     DELETE_ FROM_ qualified_table_name
     (WHERE_ expr)?
     returning_clause?
-;
-
-detach_stmt:
-    DETACH_ DATABASE_? schema_name
-;
-
-drop_stmt:
-    DROP_ object = (INDEX_ | TABLE_ | TRIGGER_ | VIEW_) (
-        IF_ EXISTS_
-    )? (schema_name DOT)? any_name
 ;
 
 /*
@@ -338,29 +168,16 @@ upsert_clause:
     )
 ;
 
-pragma_stmt:
-    PRAGMA_ (schema_name DOT)? pragma_name (
-        ASSIGN pragma_value
-        | OPEN_PAR pragma_value CLOSE_PAR
-    )?
-;
-
-pragma_value:
-    signed_number
-    | name
-    | STRING_LITERAL
-;
-
-reindex_stmt:
-    REINDEX_ (collation_name | (schema_name DOT)? (table_name | index_name))?
-;
-
 select_stmt_core:
-    select_core (compound_operator select_core)* order_by_stmt? limit_stmt?
+    select_core
+    (compound_operator select_core)*
+    order_by_stmt?
+    limit_stmt?
 ;
 
 select_stmt:
-    common_table_stmt? select_stmt_core
+    common_table_stmt?
+    select_stmt_core
 ;
 
 join_clause:
@@ -378,23 +195,8 @@ select_core:
     )?
 ;
 
-factored_select_stmt:
-    select_stmt
-;
-
-simple_select_stmt:
-    common_table_stmt? select_core order_by_stmt? limit_stmt?
-;
-
-compound_select_stmt:
-    common_table_stmt? select_core (
-        (UNION_ ALL_? | INTERSECT_ | EXCEPT_) select_core
-    )+ order_by_stmt? limit_stmt?
-;
-
 table_or_subquery:
     table_name (AS_ table_alias)?
-    | OPEN_PAR (table_or_subquery (COMMA table_or_subquery)* | join_clause) CLOSE_PAR
     | OPEN_PAR select_stmt_core CLOSE_PAR (AS_ table_alias)?
 ;
 
@@ -410,7 +212,9 @@ returning_clause_result_column:
 ;
 
 join_operator:
-    NATURAL_? ((LEFT_ | RIGHT_ | FULL_) OUTER_? | INNER_)? JOIN_
+    NATURAL_?
+    ((LEFT_ | RIGHT_ | FULL_) OUTER_? | INNER_)?
+    JOIN_
 ;
 
 join_constraint:
@@ -441,33 +245,9 @@ column_name_list:
     OPEN_PAR column_name (COMMA column_name)* CLOSE_PAR
 ;
 
-update_stmt_limited:
-    common_table_stmt?
-    UPDATE_ (OR_ (ROLLBACK_ | ABORT_ | REPLACE_ | FAIL_ | IGNORE_))?
-    qualified_table_name
-    SET_  (update_set_subclause COMMA update_set_subclause)*
-    (WHERE_ expr)?
-    returning_clause?
-    (order_by_stmt? limit_stmt)?
-;
-
 qualified_table_name:
     table_name (AS_ alias)?
     (INDEXED_ BY_ index_name | NOT_ INDEXED_)?
-;
-
-vacuum_stmt:
-    VACUUM_ schema_name? (INTO_ filename)?
-;
-
-filter_clause:
-    FILTER_ OPEN_PAR WHERE_ expr CLOSE_PAR
-;
-
-frame_clause: (RANGE_ | ROWS_ | GROUPS_) (
-        frame_single
-        | BETWEEN_ frame_left AND_ frame_right
-    )
 ;
 
 order_by_stmt:
@@ -479,7 +259,10 @@ limit_stmt:
 ;
 
 ordering_term:
-    expr (COLLATE_ collation_name)? asc_desc? (NULLS_ (FIRST_ | LAST_))?
+    expr
+    (COLLATE_ collation_name)?
+    asc_desc?
+    (NULLS_ (FIRST_ | LAST_))?
 ;
 
 asc_desc:
@@ -487,89 +270,7 @@ asc_desc:
     | DESC_
 ;
 
-frame_left:
-    expr PRECEDING_
-    | expr FOLLOWING_
-    | CURRENT_ ROW_
-    | UNBOUNDED_ PRECEDING_
-;
-
-frame_right:
-    expr PRECEDING_
-    | expr FOLLOWING_
-    | CURRENT_ ROW_
-    | UNBOUNDED_ FOLLOWING_
-;
-
-frame_single:
-    expr PRECEDING_
-    | UNBOUNDED_ PRECEDING_
-    | CURRENT_ ROW_
-;
-
 // unknown
-
-window_function:
-    (FIRST_VALUE_ | LAST_VALUE_) OPEN_PAR expr CLOSE_PAR OVER_ OPEN_PAR partition_by? order_by_expr_asc_desc frame_clause
-        ? CLOSE_PAR
-    | (CUME_DIST_ | PERCENT_RANK_) OPEN_PAR CLOSE_PAR OVER_ OPEN_PAR partition_by? order_by_expr? CLOSE_PAR
-    | (DENSE_RANK_ | RANK_ | ROW_NUMBER_) OPEN_PAR CLOSE_PAR OVER_ OPEN_PAR partition_by? order_by_expr_asc_desc
-        CLOSE_PAR
-    | (LAG_ | LEAD_) OPEN_PAR expr offset? default_value? CLOSE_PAR OVER_ OPEN_PAR partition_by?
-        order_by_expr_asc_desc CLOSE_PAR
-    | NTH_VALUE_ OPEN_PAR expr COMMA signed_number CLOSE_PAR OVER_ OPEN_PAR partition_by? order_by_expr_asc_desc
-        frame_clause? CLOSE_PAR
-    | NTILE_ OPEN_PAR expr CLOSE_PAR OVER_ OPEN_PAR partition_by? order_by_expr_asc_desc CLOSE_PAR
-;
-
-offset:
-    COMMA signed_number
-;
-
-default_value:
-    COMMA signed_number
-;
-
-partition_by:
-    PARTITION_ BY_ expr+
-;
-
-order_by_expr:
-    ORDER_ BY_ expr+
-;
-
-order_by_expr_asc_desc:
-    ORDER_ BY_ expr_asc_desc
-;
-
-expr_asc_desc:
-    expr asc_desc? (COMMA expr asc_desc?)*
-;
-
-//TODO BOTH OF THESE HAVE TO BE REWORKED TO FOLLOW THE SPEC
-initial_select:
-    select_stmt
-;
-
-recursive_select:
-    select_stmt
-;
-
-unary_operator:
-    MINUS
-    | PLUS
-    | TILDE
-    | NOT_
-;
-
-error_message:
-    STRING_LITERAL
-;
-
-module_argument: // TODO check what exactly is permitted here
-    expr
-    | column_def
-;
 
 column_alias:
     IDENTIFIER
@@ -736,23 +437,11 @@ keyword:
 
 // TODO: check all names below
 
-name:
-    any_name
-;
-
 function_name:
     any_name
 ;
 
-schema_name:
-    any_name
-;
-
 table_name:
-    any_name
-;
-
-table_or_index_name:
     any_name
 ;
 
@@ -764,31 +453,7 @@ collation_name:
     any_name
 ;
 
-foreign_table:
-    any_name
-;
-
 index_name:
-    any_name
-;
-
-trigger_name:
-    any_name
-;
-
-view_name:
-    any_name
-;
-
-module_name:
-    any_name
-;
-
-pragma_name:
-    any_name
-;
-
-savepoint_name:
     any_name
 ;
 
@@ -796,35 +461,7 @@ table_alias:
     any_name
 ;
 
-transaction_name:
-    any_name
-;
-
-window_name:
-    any_name
-;
-
 alias:
-    any_name
-;
-
-filename:
-    any_name
-;
-
-base_window_name:
-    any_name
-;
-
-simple_func:
-    any_name
-;
-
-aggregate_func:
-    any_name
-;
-
-table_function_name:
     any_name
 ;
 
