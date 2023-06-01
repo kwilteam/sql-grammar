@@ -115,7 +115,7 @@ expr:
     | expr AND_ expr
     | expr OR_ expr
     | OPEN_PAR expr_list+=expr (COMMA expr_list+=expr)* CLOSE_PAR
-    | function_name OPEN_PAR ((expr ( COMMA expr)*) | STAR)? CLOSE_PAR
+    | function_name OPEN_PAR ((DISTINCT_? expr (COMMA expr)*) | STAR)? CLOSE_PAR
     | CASE_ case_expr=expr? (WHEN_ when_expr+=expr THEN_ then_expr+=expr)+ (ELSE_ else_expr=expr)? END_
 ;
 
