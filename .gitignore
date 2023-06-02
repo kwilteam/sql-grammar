@@ -1,6 +1,8 @@
 #ide
 .idea
 
+go.mod
+
 antlr-4.12.0-complete.jar
 gen/
 *.go
