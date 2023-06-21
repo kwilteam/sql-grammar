@@ -277,67 +277,15 @@ column_alias:
     | STRING_LITERAL
 ;
 
-keyword:
-    AND_
-    | AS_
-    | ASC_
-    | BETWEEN_
-    | CASE_
-    | COLLATE_
-    | CONFLICT_
-    | CROSS_
-    | DEFAULT_
-    | DELETE_
-    | DESC_
-    | DISTINCT_
-    | FAIL_
-    | FROM_
-    | FULL_
-    | GLOB_
-    | GROUP_
-    | HAVING_
-    | IGNORE_
-    | IN_
-    | INNER_
-    | INSERT_
-    | INTO_
-    | IS_
-    | ISNULL_
-    | JOIN_
-    | LEFT_
+keyword_function_name:
+    GLOB_
     | LIKE_
-    | LIMIT_
-    | MATCH_
-    | NATURAL_
-    | NOT_
-    | NOTNULL_
-    | NULL_
-    | OFFSET_
-    | ON_
-    | OR_
-    | ORDER_
-    | OUTER_
-    | RAISE_
-    | REGEXP_
     | REPLACE_
-    | RIGHT_
-    | ROLLBACK_
-    | SELECT_
-    | SET_
-    | UNION_
-    | UPDATE_
-    | USING_
-    | VALUES_
-    | WHERE_
-    | WITH_
-    | TRUE_
-    | FALSE_
-    | FILTER_
-    | GROUPS_
 ;
 
 function_name:
-    any_name
+    keyword_function_name
+    | any_name
 ;
 
 table_name:
@@ -366,7 +314,6 @@ alias:
 
 any_name:
     IDENTIFIER
-    | keyword
     | STRING_LITERAL
     | OPEN_PAR any_name CLOSE_PAR
 ;
