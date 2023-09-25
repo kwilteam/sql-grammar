@@ -246,7 +246,7 @@ column_name_list:
 ;
 
 qualified_table_name:
-    table_name (AS_ alias)?
+    table_name (AS_ table_alias)?
     (INDEXED_ BY_ index_name | NOT_ INDEXED_)?
 ;
 
@@ -270,50 +270,40 @@ asc_desc:
     | DESC_
 ;
 
-// unknown
 
-column_alias:
-    IDENTIFIER
-    | STRING_LITERAL
-;
-
-keyword_function_name:
+// function_keywords are keywords also function names
+function_keyword:
     GLOB_
     | LIKE_
     | REPLACE_
 ;
 
 function_name:
-    keyword_function_name
-    | any_name
+    IDENTIFIER
+    | function_keyword
 ;
 
 table_name:
-    any_name
-;
-
-column_name:
-    any_name
-;
-
-collation_name:
-    any_name
-;
-
-index_name:
-    any_name
+    IDENTIFIER
 ;
 
 table_alias:
-    any_name
-;
-
-alias:
-    any_name
-;
-
-any_name:
     IDENTIFIER
-    | STRING_LITERAL
-    | OPEN_PAR any_name CLOSE_PAR
 ;
+
+column_name:
+    IDENTIFIER
+;
+
+column_alias:
+    IDENTIFIER
+;
+
+collation_name:
+    IDENTIFIER
+;
+
+index_name:
+    IDENTIFIER
+;
+

@@ -135,10 +135,10 @@ WHERE_:             'WHERE';
 WITH_:              'WITH';
 
 IDENTIFIER:
-    '"' (~'"' | '""')* '"'
+    '"' (~'"' | '""')* '"' // Delimited identifiers
     | '`' (~'`' | '``')* '`'
     | '[' ~']'* ']'
-    | [A-Z_] [A-Z_0-9]*
+    | [A-Z_] [A-Z_0-9]* // Ordinary identifiers
 ; // TODO check: needs more chars in set
 
 NUMERIC_LITERAL: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) ('E' [-+]? DIGIT+)? | '0x' HEX_DIGIT+;
