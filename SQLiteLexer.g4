@@ -55,12 +55,17 @@ NOT_EQ1:   '!=';
 NOT_EQ2:   '<>';
 
 // http://www.sqlite.org/lang_keywords.html
+// TODO: ==> https://www.postgresql.org/docs/current/sql-keywords-appendix.html
 ABORT_:             'ABORT';
+//ABS_:               'ABS'; // pg
 ADD_:               'ADD';
 ALL_:               'ALL';
 AND_:               'AND';
+//ANY_:               'ANY'; // =ANY in postgresql like IN... need update to ensure =precedes?
+//ARRAY_AGG:               'ARRAY_AGG'; // pg
 ASC_:               'ASC';
 AS_:                'AS';
+//AVG_:               'AVG'; // pg
 BETWEEN_:           'BETWEEN';
 BY_:                'BY';
 CASE_:              'CASE';
@@ -138,7 +143,7 @@ IDENTIFIER:
     '"' (~'"' | '""')* '"' // Delimited identifiers
     | '`' (~'`' | '``')* '`'
     | '[' ~']'* ']'
-    | [A-Z_] [A-Z_0-9]* // Ordinary identifiers
+    | [A-Z_] [1-9]* [A-Z_0-9]* // Ordinary identifiers
 ; // TODO check: needs more chars in set
 
 NUMERIC_LITERAL: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) ('E' [-+]? DIGIT+)? | '0x' HEX_DIGIT+;
@@ -155,7 +160,7 @@ MULTILINE_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
 
 SPACES: [ \u000B\t\r\n] -> channel(HIDDEN);
 
-UNEXPECTED_CHAR: .;
+UNEXPECTED_CHAR: .; // ?
 
 fragment HEX_DIGIT: [0-9A-F];
 fragment DIGIT:     [0-9];

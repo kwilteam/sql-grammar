@@ -7,6 +7,7 @@ package=${2:-sqlgrammar}
 output_dir=${3:-.}
 
 antlr_bin=antlr-4.12.0-complete.jar
+# antlr_bin=antlr-4.13.1-complete.jar
 
 if [ ! -f $antlr_bin ]; then
     echo "Downloading antlr4 jar file..."
