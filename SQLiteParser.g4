@@ -81,15 +81,22 @@ delete_stmt:
     = == != <> IS IS NOT IN LIKE GLOB MATCH REGEXP
     AND
     OR
+
+ Type cast can only be applied to:
+   literal_value
+   BIND_PARAMETER
+   column_name
+   () parenthesesed expr
+   function_call
  */
-expr:
+expr: // TODO: assign name to each expr
     // primary expressions(those dont fit operator pattern), order is irrelevant
-    literal_value
-    | BIND_PARAMETER
-    | (table_name DOT)? column_name
+    literal_value type_cast?
+    | BIND_PARAMETER type_cast?
+    | (table_name DOT)? column_name type_cast?
     | ((NOT_)? EXISTS_)? OPEN_PAR select_stmt_core CLOSE_PAR
     // order is relevant for the rest
-    | OPEN_PAR elevate_expr=expr CLOSE_PAR
+    | OPEN_PAR elevate_expr=expr CLOSE_PAR type_cast?
     | (MINUS | PLUS | TILDE) unary_expr=expr
     | expr COLLATE_ collation_name
     | expr PIPE2 expr
@@ -115,8 +122,16 @@ expr:
     | expr AND_ expr
     | expr OR_ expr
     | OPEN_PAR expr_list+=expr (COMMA expr_list+=expr)* CLOSE_PAR
-    | function_name OPEN_PAR ((DISTINCT_? expr (COMMA expr)*) | STAR)? CLOSE_PAR
+    | function_name OPEN_PAR ((DISTINCT_? expr (COMMA expr)*) | STAR)? CLOSE_PAR type_cast?
     | CASE_ case_expr=expr? (WHEN_ when_expr+=expr THEN_ then_expr+=expr)+ (ELSE_ else_expr=expr)? END_
+;
+
+cast_type:
+    IDENTIFIER
+;
+
+type_cast:
+    TYPE_CAST cast_type
 ;
 
 literal_value:

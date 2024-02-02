@@ -53,6 +53,7 @@ GT_EQ:     '>=';
 EQ:        '==';
 NOT_EQ1:   '!=';
 NOT_EQ2:   '<>';
+TYPE_CAST: '::';
 
 // http://www.sqlite.org/lang_keywords.html
 ABORT_:             'ABORT';
