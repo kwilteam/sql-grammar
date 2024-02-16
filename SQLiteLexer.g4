@@ -103,7 +103,6 @@ LAST_:              'LAST';
 LEFT_:              'LEFT';
 LIKE_:              'LIKE';
 LIMIT_:             'LIMIT';
-NATURAL_:           'NATURAL';
 NOTHING_:           'NOTHING';
 NOTNULL_:           'NOTNULL';
 NOT_:               'NOT';
