@@ -78,7 +78,7 @@ delete_stmt:
     + -
     << >> & |
     < <= > >=
-    = == != <> IS IS NOT IN LIKE REGEXP
+    = == != <> IS IS NOT IN LIKE
     AND
     OR
 
@@ -112,7 +112,7 @@ expr: // TODO: assign name to each expr
         | NOT_EQ2
         | IS_ NOT_?
         | IS_ NOT_? DISTINCT_ FROM_
-        | NOT_? (IN_ | REGEXP_)
+        | NOT_? IN_
     ) expr
     | expr NOT_? LIKE_ expr (ESCAPE_ expr)?
     | expr NOT_? BETWEEN_ expr AND_ expr
