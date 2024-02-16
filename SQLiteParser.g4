@@ -112,7 +112,7 @@ expr: // TODO: assign name to each expr
         | NOT_EQ2
         | IS_ NOT_?
         | IS_ NOT_? DISTINCT_ FROM_
-        | NOT_? (IN_ | GLOB_ | MATCH_ | REGEXP_)
+        | NOT_? (IN_ | GLOB_ | REGEXP_)
     ) expr
     | expr NOT_? LIKE_ expr (ESCAPE_ expr)?
     | expr NOT_? BETWEEN_ expr AND_ expr
