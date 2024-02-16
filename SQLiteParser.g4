@@ -261,7 +261,6 @@ column_name_list:
 
 qualified_table_name:
     table_name (AS_ table_alias)?
-    (INDEXED_ BY_ index_name | NOT_ INDEXED_)?
 ;
 
 order_by_stmt:

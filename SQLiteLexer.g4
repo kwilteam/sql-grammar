@@ -90,7 +90,6 @@ GROUPS_:            'GROUPS';
 GROUP_:             'GROUP';
 HAVING_:            'HAVING';
 IGNORE_:            'IGNORE';
-INDEXED_:           'INDEXED';
 INNER_:             'INNER';
 INSERT_:            'INSERT';
 INTERSECT_:         'INTERSECT';
