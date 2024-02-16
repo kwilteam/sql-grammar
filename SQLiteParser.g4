@@ -152,7 +152,7 @@ values_clause:
 
 insert_stmt:
     common_table_stmt?
-    (INSERT_ | INSERT_ OR_ REPLACE_) INTO_ table_name
+    INSERT_ INTO_ table_name
     (AS_ table_alias)?
     (OPEN_PAR column_name ( COMMA column_name)* CLOSE_PAR)?
     values_clause
