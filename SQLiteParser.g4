@@ -116,7 +116,7 @@ expr: // TODO: assign name to each expr
     ) expr
     | expr NOT_? LIKE_ expr (ESCAPE_ expr)?
     | expr NOT_? BETWEEN_ expr AND_ expr
-    | expr ( ISNULL_ | NOTNULL_ | NOT_ NULL_)
+    | expr ( ISNULL_ | NOTNULL_)
     //
     | NOT_ unary_expr=expr
     | expr AND_ expr
