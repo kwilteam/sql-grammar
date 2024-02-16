@@ -86,7 +86,6 @@ FILTER_:            'FILTER';
 FIRST_:             'FIRST';
 FROM_:              'FROM';
 FULL_:              'FULL';
-GLOB_:              'GLOB';
 GROUPS_:            'GROUPS';
 GROUP_:             'GROUP';
 HAVING_:            'HAVING';
