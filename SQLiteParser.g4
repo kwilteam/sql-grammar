@@ -270,7 +270,7 @@ order_by_stmt:
 ;
 
 limit_stmt:
-    LIMIT_ expr ((OFFSET_ | COMMA) expr)?
+    LIMIT_ expr (OFFSET_ expr)?
 ;
 
 ordering_term:
