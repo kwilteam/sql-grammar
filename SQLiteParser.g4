@@ -110,10 +110,10 @@ expr: // TODO: assign name to each expr
         | EQ
         | NOT_EQ1
         | NOT_EQ2
-        | IS_ NOT_?
         | IS_ NOT_? DISTINCT_ FROM_
         | NOT_? IN_
     ) expr
+    | expr IS_ NOT_? (NULL_ | TRUE_ | FALSE_)
     | expr NOT_? LIKE_ expr (ESCAPE_ expr)?
     | expr NOT_? BETWEEN_ expr AND_ expr
     | expr ( ISNULL_ | NOTNULL_)
