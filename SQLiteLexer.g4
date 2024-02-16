@@ -116,7 +116,6 @@ ORDER_:             'ORDER';
 OR_:                'OR';
 OUTER_:             'OUTER';
 RAISE_:             'RAISE';
-REGEXP_:            'REGEXP';
 REPLACE_:           'REPLACE';
 RETURNING_:         'RETURNING';
 RIGHT_:             'RIGHT';
