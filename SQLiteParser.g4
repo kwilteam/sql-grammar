@@ -227,7 +227,6 @@ returning_clause_result_column:
 ;
 
 join_operator:
-    NATURAL_?
     ((LEFT_ | RIGHT_ | FULL_) OUTER_? | INNER_)?
     JOIN_
 ;
