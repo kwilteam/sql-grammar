@@ -247,7 +247,7 @@ update_set_subclause:
 
 update_stmt:
     common_table_stmt?
-    UPDATE_ (OR_ (ROLLBACK_ | ABORT_ | REPLACE_ | FAIL_ | IGNORE_))?
+    UPDATE_
     qualified_table_name
     SET_ update_set_subclause (COMMA update_set_subclause)*
     (FROM_ (table_or_subquery | join_clause))?
