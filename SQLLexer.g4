@@ -25,7 +25,7 @@
 // $antlr-format alignTrailingComments on, columnLimit 150, maxEmptyLinesToKeep 1, reflowComments off, useTab off
 // $antlr-format allowShortRulesOnASingleLine on, alignSemicolons ownLine
 
-lexer grammar SQLiteLexer;
+lexer grammar SQLLexer;
 
 options { caseInsensitive = true; }
 
@@ -38,19 +38,12 @@ ASSIGN:    '=';
 STAR:      '*';
 PLUS:      '+';
 MINUS:     '-';
-TILDE:     '~';
-PIPE2:     '||';
 DIV:       '/';
 MOD:       '%';
-LT2:       '<<';
-GT2:       '>>';
-AMP:       '&';
-PIPE:      '|';
 LT:        '<';
 LT_EQ:     '<=';
 GT:        '>';
 GT_EQ:     '>=';
-EQ:        '==';
 NOT_EQ1:   '!=';
 NOT_EQ2:   '<>';
 TYPE_CAST: '::';

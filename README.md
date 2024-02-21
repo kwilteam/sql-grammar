@@ -15,4 +15,11 @@
 - discard `TABLE_NAME NOT INDEXED`
 - discard `UPDATE OR (ROLLBACK|ABORT|REPLACE|FAIL|IGNORE)`
 - discard `expr NOT NULL`
-- change `expr IS [NOT] expr` to `expr IS [NOT] (NULL|TRUE|FALSE)`
+- change `expr IS [NOT] expr` to `expr IS [NOT] (NULL|TRUE|FALSE)`; NOTE: if right argument is true/false, expr 
+  should also be true/false(Postgres will error), but parser cannot validate this
+- discard bitwise operator `~ | & << >> ||`
+- discard `==` operator
+- change entry RULE of parser to `statements`
+- rename Lexer and Parser to `SQLLexer` and `SQLParser`
+- refactor `expr`, reflect Postgres operator precedence
+- discard `collation` in `ordering_term`
