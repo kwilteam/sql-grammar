@@ -28,13 +28,13 @@
 // $antlr-format alignTrailingComments on, columnLimit 130, minEmptyLines 1, maxEmptyLinesToKeep 1, reflowComments off
 // $antlr-format useTab off, allowShortRulesOnASingleLine off, allowShortBlocksOnASingleLine on, alignSemicolons ownLine
 
-parser grammar SQLiteParser;
+parser grammar SQLParser;
 
 options {
-    tokenVocab = SQLiteLexer;
+    tokenVocab = SQLLexer;
 }
 
-parse: (sql_stmt_list)* EOF
+statements: (sql_stmt_list)* EOF
 ;
 
 sql_stmt_list:
@@ -71,59 +71,117 @@ delete_stmt:
     returning_clause?
 ;
 
-/*
- SQLite understands the following binary operators, in order from highest to lowest precedence:
-    ||
-    * / %
-    + -
-    << >> & |
-    < <= > >=
-    = == != <> IS IS NOT IN LIKE
-    AND
-    OR
+variable:
+    BIND_PARAMETER
+;
 
- Type cast can only be applied to:
-   literal_value
-   BIND_PARAMETER
-   column_name
-   () parenthesesed expr
-   function_call
- */
-expr: // TODO: assign name to each expr
-    // primary expressions(those dont fit operator pattern), order is irrelevant
-    literal_value type_cast?
-    | BIND_PARAMETER type_cast?
-    | (table_name DOT)? column_name type_cast?
-    | ((NOT_)? EXISTS_)? OPEN_PAR select_stmt_core CLOSE_PAR
-    // order is relevant for the rest
-    | OPEN_PAR elevate_expr=expr CLOSE_PAR type_cast?
-    | (MINUS | PLUS | TILDE) unary_expr=expr
-    | expr COLLATE_ collation_name
-    | expr PIPE2 expr
-    | expr ( STAR | DIV | MOD) expr
-    | expr ( PLUS | MINUS) expr
-    | expr ( LT2 | GT2 | AMP | PIPE) expr
-    | expr ( LT | LT_EQ | GT | GT_EQ) expr
-    // below are all operators with the same precedence
-    | expr (
-        ASSIGN
-        | EQ
-        | NOT_EQ1
-        | NOT_EQ2
-        | IS_ NOT_? DISTINCT_ FROM_
-        | NOT_? IN_
-    ) expr
-    | expr IS_ NOT_? (NULL_ | TRUE_ | FALSE_)
-    | expr NOT_? LIKE_ expr (ESCAPE_ expr)?
-    | expr NOT_? BETWEEN_ expr AND_ expr
-    | expr ( ISNULL_ | NOTNULL_)
-    //
-    | NOT_ unary_expr=expr
-    | expr AND_ expr
-    | expr OR_ expr
-    | OPEN_PAR expr_list+=expr (COMMA expr_list+=expr)* CLOSE_PAR
-    | function_name OPEN_PAR ((DISTINCT_? expr (COMMA expr)*) | STAR)? CLOSE_PAR type_cast?
-    | CASE_ case_expr=expr? (WHEN_ when_expr+=expr THEN_ then_expr+=expr)+ (ELSE_ else_expr=expr)? END_
+function_call:
+    function_name OPEN_PAR ((DISTINCT_? expr (COMMA expr)*) | STAR)? CLOSE_PAR
+;
+
+column_ref:
+    (table_name DOT)? column_name
+;
+
+when_clause:
+    WHEN_ condition=expr THEN_ result=expr
+;
+
+/*
+ https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-PRECEDENCE
+
+ Operator/Element	        Associativity	Description
+ .                              left	        table/column name separator
+ ::                             left	        PostgreSQL-style typecast
+ [ ]                            left	        array element selection
+ + -                            right	        unary plus, unary minus
+ COLLATE                        left	        collation selection
+ AT                             left	        AT TIME ZONE
+ ^                              left	        exponentiation
+ * / %                          left	        multiplication, division, modulo
+ + -                            left	        addition, subtraction
+ (any other operator)           left	        all other native and user-defined operators
+ BETWEEN IN LIKE ILIKE SIMILAR                  range containment, set membership, string matching
+ < > = <= >= <>                                 comparison operators
+ IS ISNULL NOTNULL                              IS TRUE, IS FALSE, IS NULL, IS DISTINCT FROM, etc.
+ NOT                            right	        logical negation
+ AND                            left	        logical conjunction
+ OR                             left	        logical disjunction
+
+===========
+Another way to layout expr rules is to group them by the same level of precedence,
+expr:
+    bool_expr
+    | ...
+;
+bool_expr:
+    predicate_expr
+    | ...
+;
+predicate_expr:
+    arithmatic_expr
+    | ...
+;
+arithmatic_expr:
+    primary_expr
+    | ...
+;
+primary_expr:
+    literal_expr
+    | ...
+;
+============
+Type cast can only be applied to:
+    literal_value
+    BIND_PARAMETER
+    column_name
+    () parenthesesed expr
+    function_call
+*/
+expr:
+    literal type_cast?                                                   #literal_expr
+    | variable type_cast?                                                #variable_expr
+    | column_ref type_cast?                                              #column_expr
+    | <assoc=right>  operator=(MINUS | PLUS) expr                        #unary_expr
+    | expr COLLATE_ collation_name                                       #collate_expr
+    | OPEN_PAR expr CLOSE_PAR type_cast?                                 #parenthesized_expr
+    | ((NOT_)? EXISTS_)? subquery                                        #subquery_expr
+    |  CASE_ case_clause=expr?
+        when_clause+
+        (ELSE_ else_clause=expr)? END_                                   #case_expr
+    | OPEN_PAR expr_list CLOSE_PAR                                       #expr_list_expr
+    | function_call type_cast?                                           #function_expr
+    // arithmetic expressions
+    // exponentiation
+    | left=expr operator=(STAR|DIV|MOD) right=expr                       #arithmetic_expr
+    | left=expr operator=(PLUS|MINUS) right=expr                         #arithmetic_expr
+    // boolean expressions
+    // predicate
+    | elem=expr NOT_? operator=IN_ subquery                              #in_subquery_expr
+    | elem=expr NOT_? operator=IN_ OPEN_PAR expr_list CLOSE_PAR          #in_list_expr
+    | elem=expr NOT_? operator=BETWEEN_ low=expr AND_ high=expr          #between_expr
+    | elem=expr NOT_? operator=LIKE_ pattern=expr (ESCAPE_ escape=expr)? #like_expr
+    // comparison
+    | left=expr comparisonOperator right=expr                            #comparison_expr
+    //| left=expr comparisonOperator right=subquery                      #scalar_subquery_expr
+    | expr IS_ NOT_? (DISTINCT_ FROM_ expr | boolean_value | NULL_)      #is_expr
+    | expr (ISNULL_ | NOTNULL_)                                          #null_expr
+    // logical expressions
+    | <assoc=right> NOT_ expr                                             #logical_not_expr
+    | left=expr operator=AND_ right=expr                                 #logical_binary_expr
+    | left=expr operator=OR_ right=expr                                  #logical_binary_expr
+;
+
+subquery:
+    OPEN_PAR select_stmt_core CLOSE_PAR // note: don't support with clause in subquery
+;
+
+expr_list:
+    expr (COMMA expr)*
+;
+
+comparisonOperator:
+    LT|LT_EQ|GT|GT_EQ|ASSIGN|NOT_EQ1|NOT_EQ2
 ;
 
 cast_type:
@@ -134,12 +192,24 @@ type_cast:
     TYPE_CAST cast_type
 ;
 
-literal_value:
-    NUMERIC_LITERAL
-    | STRING_LITERAL
-    | NULL_
-    | TRUE_
+boolean_value:
+    TRUE_
     | FALSE_
+;
+
+string_value:
+    STRING_LITERAL
+;
+
+numeric_value:
+    NUMERIC_LITERAL
+;
+
+literal:
+    NULL_
+    | boolean_value
+    | string_value
+    | numeric_value
 ;
 
 value_row:
@@ -273,7 +343,6 @@ limit_stmt:
 
 ordering_term:
     expr
-    (COLLATE_ collation_name)?
     asc_desc?
     (NULLS_ (FIRST_ | LAST_))?
 ;
@@ -312,7 +381,7 @@ column_alias:
 ;
 
 collation_name:
-    IDENTIFIER
+    IDENTIFIER      // back-compatible with sqlite, NOCASE
 ;
 
 index_name:
