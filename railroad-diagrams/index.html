@@ -1,0 +1,385 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><script type="text/javascript">(()=>{"use strict";var e={269:function(e,t,n){var i=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0});const r=i(n(187)),s=n(987);class Provider extends r.default{constructor(e){super(),this.promises={},this.attemptedSubscriptions=new Set,this.subscriptions=[],this.checkConnectionRunning=!1,this.nextId=1,this.connected=!1,this.accounts=[],this.selectedAddress=void 0,this.coinbase=void 0,this.enable=this.enable.bind(this),this.doSend=this.doSend.bind(this),this.send=this.send.bind(this),this.sendBatch=this.sendBatch.bind(this),this.subscribe=this.subscribe.bind(this),this.unsubscribe=this.unsubscribe.bind(this),this.resumeSubscriptions=this.resumeSubscriptions.bind(this),this.sendAsync=this.sendAsync.bind(this),this.sendAsyncBatch=this.sendAsyncBatch.bind(this),this.isConnected=this.isConnected.bind(this),this.close=this.close.bind(this),this.request=this.request.bind(this),this.connection=e,this.on("connect",this.resumeSubscriptions),this.connection.on("connect",(()=>this.checkConnection(1e3))),this.connection.on("close",(()=>{this.connected=!1,this.attemptedSubscriptions.clear(),this.emit("close"),this.emit("disconnect")})),this.connection.on("payload",(e=>{const{id:t,method:n,error:i,result:r}=e;if(void 0!==t){if(this.promises[t]){const n=this.promises[t].method;if(n&&["eth_accounts","eth_requestAccounts"].includes(n)){const e=r||[];this.accounts=e,this.selectedAddress=e[0],this.coinbase=e[0]}e.error?this.promises[t].reject(i):this.promises[t].resolve(r),delete this.promises[t]}}else n&&n.indexOf("_subscription")>-1&&(this.emit(e.params.subscription,e.params.result),this.emit(n,e.params),this.emit("message",{type:e.method,data:{subscription:e.params.subscription,result:e.params.result}}),this.emit("data",e))})),this.on("newListener",(e=>{Object.keys(this.eventHandlers).includes(e)&&!this.attemptedSubscription(e)&&this.connected&&(this.startSubscription(e),"networkChanged"===e&&console.warn("The networkChanged event is being deprecated, use chainChanged instead"))})),this.eventHandlers={networkChanged:e=>{this.networkVersion="string"==typeof e?parseInt(e):e,this.emit("networkChanged",this.networkVersion)},chainChanged:e=>{this.providerChainId=e,this.manualChainId||this.emit("chainChanged",e)},chainsChanged:e=>{this.emit("chainsChanged",e)},accountsChanged:e=>{this.selectedAddress=e[0],this.emit("accountsChanged",e)},assetsChanged:e=>{this.emit("assetsChanged",e)}}}get chainId(){return this.manualChainId||this.providerChainId}async checkConnection(e=4e3){if(!this.checkConnectionRunning&&!this.connected){clearTimeout(this.checkConnectionTimer),this.checkConnectionTimer=void 0,this.checkConnectionRunning=!0;try{this.networkVersion=await this.doSend("net_version",[],void 0,!1),this.providerChainId=await this.doSend("eth_chainId",[],void 0,!1),this.connected=!0}catch(t){this.checkConnectionTimer=setTimeout((()=>this.checkConnection()),e),this.connected=!1}finally{this.checkConnectionRunning=!1,this.connected&&this.emit("connect",{chainId:this.providerChainId})}}}attemptedSubscription(e){return this.attemptedSubscriptions.has(e)}setSubscriptionAttempted(e){this.attemptedSubscriptions.add(e)}async startSubscription(e){console.debug(`starting subscription for ${e} events`),this.setSubscriptionAttempted(e);try{const t=await this.subscribe("eth_subscribe",e);this.on(t,this.eventHandlers[e])}catch(t){console.warn(`Unable to subscribe to ${e}`,t)}}resumeSubscriptions(){Object.keys(this.eventHandlers).forEach((e=>{this.listenerCount(e)&&!this.attemptedSubscription(e)&&this.startSubscription(e)}))}async enable(){const e=await this.doSend("eth_accounts");if(e.length>0)return this.accounts=e,this.selectedAddress=e[0],this.coinbase=e[0],this.emit("enable"),e;{const e=new Error("User Denied Full Provider");throw e.code="4001",e}}doSend(e,t=[],n=this.manualChainId,i=!0){const sendFn=(i,r)=>{const o="object"==typeof e?e.method:e,c="object"==typeof e?e.params:t,a="object"==typeof e&&e.chainId||n;if(!o)return r(new Error("Method is not a valid string."));try{const e=(0,s.create)(o,c,this.nextId++,a);this.promises[e.id]={resolve:e=>i(e),reject:r,method:e.method},this.connection.send(e)}catch(e){r(e)}};return this.connected||!i?new Promise(sendFn):new Promise(((e,t)=>{const resolveSend=()=>(clearTimeout(n),e(new Promise(sendFn))),n=setTimeout((()=>{this.off("connect",resolveSend),t(new Error("Not connected"))}),5e3);this.once("connect",resolveSend)}))}async send(e,t){if("string"==typeof e&&(!t||Array.isArray(t))){const n=t;return this.doSend(e,n)}if(e&&"object"==typeof e&&"function"==typeof t){const n=t;return this.sendAsync(e,n)}return this.request(e)}sendBatch(e){return Promise.all(e.map((e=>this.doSend(e.method,e.params))))}async subscribe(e,t,n=[]){const i=await this.doSend(e,[t,...n]);return this.subscriptions.push(i),i}async unsubscribe(e,t){const n=await this.doSend(e,[t]);if(n)return this.subscriptions=this.subscriptions.filter((e=>e!==t)),this.removeAllListeners(t),n}async sendAsync(e,t){if(!t||"function"!=typeof t)return new Error("Invalid or undefined callback provided to sendAsync");if(!e)return t(new Error("Invalid Payload"));if(Array.isArray(e)){const n=e.map((e=>({...e,jsonrpc:"2.0"}))),i=t;return this.sendAsyncBatch(n,i)}{const n={...e,jsonrpc:"2.0"},i=t;try{const e=await this.doSend(n.method,n.params);i(null,{id:n.id,jsonrpc:n.jsonrpc,result:e})}catch(e){i(e)}}}async sendAsyncBatch(e,t){try{const n=await this.sendBatch(e);t(null,n.map(((t,n)=>({id:e[n].id,jsonrpc:e[n].jsonrpc,result:t}))))}catch(e){t(e)}}isConnected(){return this.connected}close(){this.connection&&this.connection.close&&this.connection.close(),this.off("connect",this.resumeSubscriptions),this.connected=!1;const e=new Error("Provider closed, subscription lost, please subscribe again.");this.subscriptions.forEach((t=>this.emit(t,e))),this.subscriptions=[],this.manualChainId=void 0,this.providerChainId=void 0,this.networkVersion=void 0,this.selectedAddress=void 0,this.coinbase=void 0}async request(e){return this.doSend(e.method,e.params,e.chainId)}setChain(e){"number"==typeof e&&(e="0x"+e.toString(16));const t=e!==this.chainId;this.manualChainId=e,t&&this.emit("chainChanged",this.chainId)}}t.default=Provider},987:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.create=void 0,t.create=function create(e,t=[],n,i){const r={id:n,method:e,params:t,jsonrpc:"2.0"};if(i&&(r.chainId=i),"eth_sendTransaction"===r.method){const e=function isChainMismatch(e){if("eth_sendTransaction"!==e.method)return!1;const t=e.params[0]||{},n=t.chainId;return"chainId"in t&&parseInt(n)!==parseInt(e.chainId||n)}(r);if(e)throw new Error(`Payload chainId (${e}) inconsistent with specified target chainId: ${i}`);return function updatePayloadChain(e){const t=e.params[0]||{};return{...e,params:[{...t,chainId:t.chainId||e.chainId},...e.params.slice(1)]}}(r)}return r}},187:e=>{var t,n="object"==typeof Reflect?Reflect:null,i=n&&"function"==typeof n.apply?n.apply:function ReflectApply(e,t,n){return Function.prototype.apply.call(e,t,n)};t=n&&"function"==typeof n.ownKeys?n.ownKeys:Object.getOwnPropertySymbols?function ReflectOwnKeys(e){return Object.getOwnPropertyNames(e).concat(Object.getOwnPropertySymbols(e))}:function ReflectOwnKeys(e){return Object.getOwnPropertyNames(e)};var r=Number.isNaN||function NumberIsNaN(e){return e!=e};function EventEmitter(){EventEmitter.init.call(this)}e.exports=EventEmitter,e.exports.once=function once(e,t){return new Promise((function(n,i){function errorListener(n){e.removeListener(t,resolver),i(n)}function resolver(){"function"==typeof e.removeListener&&e.removeListener("error",errorListener),n([].slice.call(arguments))}eventTargetAgnosticAddListener(e,t,resolver,{once:!0}),"error"!==t&&function addErrorHandlerIfEventEmitter(e,t,n){"function"==typeof e.on&&eventTargetAgnosticAddListener(e,"error",t,n)}(e,errorListener,{once:!0})}))},EventEmitter.EventEmitter=EventEmitter,EventEmitter.prototype._events=void 0,EventEmitter.prototype._eventsCount=0,EventEmitter.prototype._maxListeners=void 0;var s=10;function checkListener(e){if("function"!=typeof e)throw new TypeError('The "listener" argument must be of type Function. Received type '+typeof e)}function _getMaxListeners(e){return void 0===e._maxListeners?EventEmitter.defaultMaxListeners:e._maxListeners}function _addListener(e,t,n,i){var r,s,o;if(checkListener(n),void 0===(s=e._events)?(s=e._events=Object.create(null),e._eventsCount=0):(void 0!==s.newListener&&(e.emit("newListener",t,n.listener?n.listener:n),s=e._events),o=s[t]),void 0===o)o=s[t]=n,++e._eventsCount;else if("function"==typeof o?o=s[t]=i?[n,o]:[o,n]:i?o.unshift(n):o.push(n),(r=_getMaxListeners(e))>0&&o.length>r&&!o.warned){o.warned=!0;var c=new Error("Possible EventEmitter memory leak detected. "+o.length+" "+String(t)+" listeners added. Use emitter.setMaxListeners() to increase limit");c.name="MaxListenersExceededWarning",c.emitter=e,c.type=t,c.count=o.length,function ProcessEmitWarning(e){console&&console.warn&&console.warn(e)}(c)}return e}function onceWrapper(){if(!this.fired)return this.target.removeListener(this.type,this.wrapFn),this.fired=!0,0===arguments.length?this.listener.call(this.target):this.listener.apply(this.target,arguments)}function _onceWrap(e,t,n){var i={fired:!1,wrapFn:void 0,target:e,type:t,listener:n},r=onceWrapper.bind(i);return r.listener=n,i.wrapFn=r,r}function _listeners(e,t,n){var i=e._events;if(void 0===i)return[];var r=i[t];return void 0===r?[]:"function"==typeof r?n?[r.listener||r]:[r]:n?function unwrapListeners(e){for(var t=new Array(e.length),n=0;n<t.length;++n)t[n]=e[n].listener||e[n];return t}(r):arrayClone(r,r.length)}function listenerCount(e){var t=this._events;if(void 0!==t){var n=t[e];if("function"==typeof n)return 1;if(void 0!==n)return n.length}return 0}function arrayClone(e,t){for(var n=new Array(t),i=0;i<t;++i)n[i]=e[i];return n}function eventTargetAgnosticAddListener(e,t,n,i){if("function"==typeof e.on)i.once?e.once(t,n):e.on(t,n);else{if("function"!=typeof e.addEventListener)throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type '+typeof e);e.addEventListener(t,(function wrapListener(r){i.once&&e.removeEventListener(t,wrapListener),n(r)}))}}Object.defineProperty(EventEmitter,"defaultMaxListeners",{enumerable:!0,get:function(){return s},set:function(e){if("number"!=typeof e||e<0||r(e))throw new RangeError('The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received '+e+".");s=e}}),EventEmitter.init=function(){void 0!==this._events&&this._events!==Object.getPrototypeOf(this)._events||(this._events=Object.create(null),this._eventsCount=0),this._maxListeners=this._maxListeners||void 0},EventEmitter.prototype.setMaxListeners=function setMaxListeners(e){if("number"!=typeof e||e<0||r(e))throw new RangeError('The value of "n" is out of range. It must be a non-negative number. Received '+e+".");return this._maxListeners=e,this},EventEmitter.prototype.getMaxListeners=function getMaxListeners(){return _getMaxListeners(this)},EventEmitter.prototype.emit=function emit(e){for(var t=[],n=1;n<arguments.length;n++)t.push(arguments[n]);var r="error"===e,s=this._events;if(void 0!==s)r=r&&void 0===s.error;else if(!r)return!1;if(r){var o;if(t.length>0&&(o=t[0]),o instanceof Error)throw o;var c=new Error("Unhandled error."+(o?" ("+o.message+")":""));throw c.context=o,c}var a=s[e];if(void 0===a)return!1;if("function"==typeof a)i(a,this,t);else{var d=a.length,h=arrayClone(a,d);for(n=0;n<d;++n)i(h[n],this,t)}return!0},EventEmitter.prototype.addListener=function addListener(e,t){return _addListener(this,e,t,!1)},EventEmitter.prototype.on=EventEmitter.prototype.addListener,EventEmitter.prototype.prependListener=function prependListener(e,t){return _addListener(this,e,t,!0)},EventEmitter.prototype.once=function once(e,t){return checkListener(t),this.on(e,_onceWrap(this,e,t)),this},EventEmitter.prototype.prependOnceListener=function prependOnceListener(e,t){return checkListener(t),this.prependListener(e,_onceWrap(this,e,t)),this},EventEmitter.prototype.removeListener=function removeListener(e,t){var n,i,r,s,o;if(checkListener(t),void 0===(i=this._events))return this;if(void 0===(n=i[e]))return this;if(n===t||n.listener===t)0==--this._eventsCount?this._events=Object.create(null):(delete i[e],i.removeListener&&this.emit("removeListener",e,n.listener||t));else if("function"!=typeof n){for(r=-1,s=n.length-1;s>=0;s--)if(n[s]===t||n[s].listener===t){o=n[s].listener,r=s;break}if(r<0)return this;0===r?n.shift():function spliceOne(e,t){for(;t+1<e.length;t++)e[t]=e[t+1];e.pop()}(n,r),1===n.length&&(i[e]=n[0]),void 0!==i.removeListener&&this.emit("removeListener",e,o||t)}return this},EventEmitter.prototype.off=EventEmitter.prototype.removeListener,EventEmitter.prototype.removeAllListeners=function removeAllListeners(e){var t,n,i;if(void 0===(n=this._events))return this;if(void 0===n.removeListener)return 0===arguments.length?(this._events=Object.create(null),this._eventsCount=0):void 0!==n[e]&&(0==--this._eventsCount?this._events=Object.create(null):delete n[e]),this;if(0===arguments.length){var r,s=Object.keys(n);for(i=0;i<s.length;++i)"removeListener"!==(r=s[i])&&this.removeAllListeners(r);return this.removeAllListeners("removeListener"),this._events=Object.create(null),this._eventsCount=0,this}if("function"==typeof(t=n[e]))this.removeListener(e,t);else if(void 0!==t)for(i=t.length-1;i>=0;i--)this.removeListener(e,t[i]);return this},EventEmitter.prototype.listeners=function listeners(e){return _listeners(this,e,!0)},EventEmitter.prototype.rawListeners=function rawListeners(e){return _listeners(this,e,!1)},EventEmitter.listenerCount=function(e,t){return"function"==typeof e.listenerCount?e.listenerCount(t):listenerCount.call(e,t)},EventEmitter.prototype.listenerCount=listenerCount,EventEmitter.prototype.eventNames=function eventNames(){return this._eventsCount>0?t(this._events):[]}}},t={};function __webpack_require__(n){var i=t[n];if(void 0!==i)return i.exports;var r=t[n]={exports:{}};return e[n].call(r.exports,r,r.exports,__webpack_require__),r.exports}__webpack_require__.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return __webpack_require__.d(t,{a:t}),t},__webpack_require__.d=(e,t)=>{for(var n in t)__webpack_require__.o(t,n)&&!__webpack_require__.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},__webpack_require__.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e=__webpack_require__(187),t=__webpack_require__.n(e),n=__webpack_require__(269),i=__webpack_require__.n(n);function setProvider(){Object.getOwnPropertyDescriptor(window,"ethereum")?.configurable?Object.defineProperty(window,"ethereum",{value:r,writable:!0,configurable:!0,enumerable:!0}):window.ethereum=r}class ExtensionProvider extends(i()){doSend(e,t,n,i){if(!i&&("eth_chainId"===e||"net_version"===e)){const n={jsonrpc:"2.0",id:this.nextId++,method:e,params:t,__extensionConnecting:!0};return new Promise(((t,i)=>{this.promises[n.id]={resolve:t,reject:i,method:e},this.connection.send(n)}))}return super.doSend(e,t,n,i)}}class Connection extends(t()){constructor(){super(),window.addEventListener("message",(e=>{if(e&&e.source===window&&e.data){const{type:t}=e.data;"eth:payload"===t&&this.emit("payload",e.data.payload),"eth:event"===t&&this.emit(e.data.event,...e.data.args)}})),setTimeout((()=>this.emit("connect")),0)}send(e){window.postMessage({type:"eth:send",payload:e},window.location.origin)}}let r,s=window.localStorage.getItem("__frameAppearAsMM__");try{s=JSON.parse(s)}catch(e){s=!1}if(s){class MetaMaskProvider extends ExtensionProvider{}try{r=new MetaMaskProvider(new Connection),r.isMetaMask=!0,r._metamask={isUnlocked:()=>new Promise((e=>e(!0)))},r.setMaxListeners(0)}catch(e){console.error("Frame Error:",e)}}else{class FrameProvider extends ExtensionProvider{}try{r=new FrameProvider(new Connection),r.isFrame=!0,r.setMaxListeners(0)}catch(e){console.error("Frame Error:",e)}}setProvider(),function shimWeb3(e,t){let n=!1;if(!window.web3){const i=t?"__isMetaMaskShim__":"__isFrameShim__",r={currentProvider:e};Object.defineProperty(r,i,{value:!0,enumerable:!0,configurable:!1,writable:!1});const s=new Proxy(r,{get:(e,t,...r)=>("currentProvider"!==t||n?"currentProvider"!==t&&t!==i&&console.error(`You are requesting the "${t}" property of window.web3 which no longer supported; use window.ethereum instead.`):(n=!0,console.warn("You are accessing the Frame window.web3.currentProvider shim. This property is deprecated; use window.ethereum instead.")),Reflect.get(e,t,...r)),set:(...e)=>(console.warn("You are accessing the Frame window.web3 shim. This object is deprecated; use window.ethereum instead."),Reflect.set(...e))});Object.defineProperty(window,"web3",{value:s,enumerable:!1,configurable:!0,writable:!0})}}(window.ethereum,s);const o={getChainId:async()=>({chainId:await window.ethereum.doSend("eth_chainId",[],void 0,!1)})};document.addEventListener("readystatechange",(e=>{"interactive"===document.readyState&&setProvider()})),window.addEventListener("message",(async e=>{if(e&&e.source===window&&e.data&&"embedded:action"===e.data.type&&window.self===window.top&&e.data.action){const t=e.data.action;if(o[t.type]){const e={method:"embedded_action_res",params:[t,await o[t.type](t)]};window.postMessage({type:"eth:send",payload:e},window.location.origin)}else console.warn(`Could not find embedded action ${t.type}`)}}))})()})();</script><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta name="generator" content="Railroad Diagram Generator 2.1">
+      <style type="text/css">
+    ::-moz-selection
+    {
+      color: #FFFFFF;
+      background: #141414;
+    }
+    ::selection
+    {
+      color: #FFFFFF;
+      background: #141414;
+    }
+    body
+    {
+      font: normal 12px Verdana, sans-serif;
+      color: #141414;
+      background: #FFFFFF;
+    }
+    .ebnf a
+    {
+      text-decoration: none;
+    }
+    .ebnf a:hover
+    {
+      color: #0F0F0F;
+      text-decoration: underline;
+    }
+    .signature
+    {
+      color: #4D4D4D;
+      font-size: 11px;
+      text-align: right;
+    }
+    a:link, a:visited
+    {
+      color: #141414;
+    }
+    a:link.signature, a:visited.signature
+    {
+      color: #4D4D4D;
+    }
+    div.ebnf
+    {
+      padding: 10px;
+      background: #F0F0F0;
+      width: 992px;
+    }
+    .ebnf div
+    {
+      padding-left: 13ch;
+      text-indent: -13ch;
+    }
+    .ebnf code
+    {
+      font:12px SFMono-Regular,Consolas,Liberation Mono,Menlo,Courier,monospace;
+    }
+  </style>
+   </head>
+   <body>
+      <p style="font-size: 14px; font-weight:bold"><a name="statements">statements:</a></p><img border="0" src="diagram/statements.svg" height="71" width="265" usemap="#statements.map"><map name="statements.map"><area shape="rect" coords="49,1,151,33" href="#sql_stmt_list" title="sql_stmt_list"><area shape="rect" coords="191,35,235,67" href="#EOF" title="EOF"></map><p>no references</p><br><p style="font-size: 14px; font-weight:bold"><a name="sql_stmt_list">sql_stmt_list:</a></p><img border="0" src="diagram/sql_stmt_list.svg" height="97" width="341" usemap="#sql_stmt_list.map"><map name="sql_stmt_list.map"><area shape="rect" coords="133,61,207,93" href="#sql_stmt" title="sql_stmt"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#statements" title="statements">statements</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="sql_stmt">sql_stmt:</a></p><img border="0" src="diagram/sql_stmt.svg" height="169" width="201" usemap="#sql_stmt.map"><map name="sql_stmt.map"><area shape="rect" coords="49,1,145,33" href="#delete_stmt" title="delete_stmt"><area shape="rect" coords="49,45,141,77" href="#insert_stmt" title="insert_stmt"><area shape="rect" coords="49,89,143,121" href="#select_stmt" title="select_stmt"><area shape="rect" coords="49,133,151,165" href="#update_stmt" title="update_stmt"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#sql_stmt_list" title="sql_stmt_list">sql_stmt_list</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="indexed_column">indexed_column:</a></p><img border="0" src="diagram/indexed_column.svg" height="37" width="167" usemap="#indexed_column.map"><map name="indexed_column.map"><area shape="rect" coords="29,1,137,33" href="#column_name" title="column_name"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#upsert_clause" title="upsert_clause">upsert_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="cte_table_name">cte_table_name:</a></p><img border="0" src="diagram/cte_table_name.svg" height="97" width="455" usemap="#cte_table_name.map"><map name="cte_table_name.map"><area shape="rect" coords="29,45,125,77" href="#table_name" title="table_name"><area shape="rect" coords="231,45,339,77" href="#column_name" title="column_name"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#common_table_expression" title="common_table_expression">common_table_expression</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="common_table_expression">common_table_expression:</a></p><img border="0" src="diagram/common_table_expression.svg" height="37" width="479" usemap="#common_table_expression.map"><map name="common_table_expression.map"><area shape="rect" coords="29,1,151,33" href="#cte_table_name" title="cte_table_name"><area shape="rect" coords="275,1,403,33" href="#select_stmt_core" title="select_stmt_core"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#common_table_stmt" title="common_table_stmt">common_table_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="common_table_stmt">common_table_stmt:</a></p><img border="0" src="diagram/common_table_stmt.svg" height="81" width="367" usemap="#common_table_stmt.map"><map name="common_table_stmt.map"><area shape="rect" coords="127,45,317,77" href="#common_table_expression" title="common_table_expression"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#delete_stmt" title="delete_stmt">delete_stmt</a></li>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+            <li><a href="#select_stmt" title="select_stmt">select_stmt</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="delete_stmt">delete_stmt:</a></p><img border="0" src="diagram/delete_stmt.svg" height="69" width="981" usemap="#delete_stmt.map"><map name="delete_stmt.map"><area shape="rect" coords="49,33,199,65" href="#common_table_stmt" title="common_table_stmt"><area shape="rect" coords="409,1,567,33" href="#qualified_table_name" title="qualified_table_name"><area shape="rect" coords="697,33,745,65" href="#expr" title="expr"><area shape="rect" coords="805,33,931,65" href="#returning_clause" title="returning_clause"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#sql_stmt" title="sql_stmt">sql_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="variable">variable:</a></p><img border="0" src="diagram/variable.svg" height="37" width="193" usemap="#variable.map"><map name="variable.map"><area shape="rect" coords="29,1,163,33" href="#BIND_PARAMETER" title="BIND_PARAMETER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="function_call">function_call:</a></p><img border="0" src="diagram/function_call.svg" height="173" width="559" usemap="#function_call.map"><map name="function_call.map"><area shape="rect" coords="29,45,143,77" href="#function_name" title="function_name"><area shape="rect" coords="395,45,443,77" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="column_ref">column_ref:</a></p><img border="0" src="diagram/column_ref.svg" height="69" width="367" usemap="#column_ref.map"><map name="column_ref.map"><area shape="rect" coords="49,33,145,65" href="#table_name" title="table_name"><area shape="rect" coords="229,1,337,33" href="#column_name" title="column_name"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="when_clause">when_clause:</a></p><img border="0" src="diagram/when_clause.svg" height="37" width="333" usemap="#when_clause.map"><map name="when_clause.map"><area shape="rect" coords="111,1,159,33" href="#expr" title="expr"><area shape="rect" coords="255,1,303,33" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="expr">expr:</a></p><img border="0" src="diagram/expr.svg" height="1451" width="715" usemap="#expr.map"><map name="expr.map"><area shape="rect" coords="69,1,125,33" href="#literal" title="literal"><area shape="rect" coords="69,45,139,77" href="#variable" title="variable"><area shape="rect" coords="69,89,159,121" href="#column_ref" title="column_ref"><area shape="rect" coords="69,133,169,165" href="#function_call" title="function_call"><area shape="rect" coords="229,33,311,65" href="#type_cast" title="type_cast"><area shape="rect" coords="157,177,205,209" href="#expr" title="expr"><area shape="rect" coords="49,309,97,341" href="#expr" title="expr"><area shape="rect" coords="239,309,355,341" href="#collation_name" title="collation_name"><area shape="rect" coords="157,573,307,605" href="#comparisonOperator" title="comparisonOperator"><area shape="rect" coords="347,353,395,385" href="#expr" title="expr"><area shape="rect" coords="341,705,419,737" href="#subquery" title="subquery"><area shape="rect" coords="387,749,461,781" href="#expr_list" title="expr_list"><area shape="rect" coords="391,793,439,825" href="#expr" title="expr"><area shape="rect" coords="377,869,425,901" href="#expr" title="expr"><area shape="rect" coords="577,793,625,825" href="#expr" title="expr"><area shape="rect" coords="507,913,555,945" href="#expr" title="expr"><area shape="rect" coords="321,957,435,989" href="#boolean_value" title="boolean_value"><area shape="rect" coords="115,1133,163,1165" href="#expr" title="expr"><area shape="rect" coords="249,1165,331,1197" href="#type_cast" title="type_cast"><area shape="rect" coords="115,1209,189,1241" href="#expr_list" title="expr_list"><area shape="rect" coords="287,1253,365,1285" href="#subquery" title="subquery"><area shape="rect" coords="145,1415,193,1447" href="#expr" title="expr"><area shape="rect" coords="253,1383,355,1415" href="#when_clause" title="when_clause"><area shape="rect" coords="487,1415,535,1447" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#delete_stmt" title="delete_stmt">delete_stmt</a></li>
+            <li><a href="#expr" title="expr">expr</a></li>
+            <li><a href="#expr_list" title="expr_list">expr_list</a></li>
+            <li><a href="#function_call" title="function_call">function_call</a></li>
+            <li><a href="#join_constraint" title="join_constraint">join_constraint</a></li>
+            <li><a href="#limit_stmt" title="limit_stmt">limit_stmt</a></li>
+            <li><a href="#ordering_term" title="ordering_term">ordering_term</a></li>
+            <li><a href="#result_column" title="result_column">result_column</a></li>
+            <li><a href="#returning_clause_result_column" title="returning_clause_result_column">returning_clause_result_column</a></li>
+            <li><a href="#select_core" title="select_core">select_core</a></li>
+            <li><a href="#update_set_subclause" title="update_set_subclause">update_set_subclause</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+            <li><a href="#upsert_clause" title="upsert_clause">upsert_clause</a></li>
+            <li><a href="#upsert_update" title="upsert_update">upsert_update</a></li>
+            <li><a href="#value_row" title="value_row">value_row</a></li>
+            <li><a href="#when_clause" title="when_clause">when_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="subquery">subquery:</a></p><img border="0" src="diagram/subquery.svg" height="37" width="279" usemap="#subquery.map"><map name="subquery.map"><area shape="rect" coords="75,1,203,33" href="#select_stmt_core" title="select_stmt_core"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="expr_list">expr_list:</a></p><img border="0" src="diagram/expr_list.svg" height="81" width="147" usemap="#expr_list.map"><map name="expr_list.map"><area shape="rect" coords="49,45,97,77" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="comparisonOperator">comparisonOperator:</a></p><img border="0" src="diagram/comparisonOperator.svg" height="301" width="139"><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="cast_type">cast_type:</a></p><img border="0" src="diagram/cast_type.svg" height="37" width="151" usemap="#cast_type.map"><map name="cast_type.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#type_cast" title="type_cast">type_cast</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="type_cast">type_cast:</a></p><img border="0" src="diagram/type_cast.svg" height="37" width="191" usemap="#type_cast.map"><map name="type_cast.map"><area shape="rect" coords="79,1,161,33" href="#cast_type" title="cast_type"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="boolean_value">boolean_value:</a></p><img border="0" src="diagram/boolean_value.svg" height="81" width="161"><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+            <li><a href="#literal" title="literal">literal</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="string_value">string_value:</a></p><img border="0" src="diagram/string_value.svg" height="37" width="183" usemap="#string_value.map"><map name="string_value.map"><area shape="rect" coords="29,1,153,33" href="#STRING_LITERAL" title="STRING_LITERAL"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#literal" title="literal">literal</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="numeric_value">numeric_value:</a></p><img border="0" src="diagram/numeric_value.svg" height="37" width="195" usemap="#numeric_value.map"><map name="numeric_value.map"><area shape="rect" coords="29,1,165,33" href="#NUMERIC_LITERAL" title="NUMERIC_LITERAL"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#literal" title="literal">literal</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="literal">literal:</a></p><img border="0" src="diagram/literal.svg" height="169" width="213" usemap="#literal.map"><map name="literal.map"><area shape="rect" coords="49,45,163,77" href="#boolean_value" title="boolean_value"><area shape="rect" coords="49,89,147,121" href="#string_value" title="string_value"><area shape="rect" coords="49,133,161,165" href="#numeric_value" title="numeric_value"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="value_row">value_row:</a></p><img border="0" src="diagram/value_row.svg" height="81" width="239" usemap="#value_row.map"><map name="value_row.map"><area shape="rect" coords="95,45,143,77" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#values_clause" title="values_clause">values_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="values_clause">values_clause:</a></p><img border="0" src="diagram/values_clause.svg" height="81" width="275" usemap="#values_clause.map"><map name="values_clause.map"><area shape="rect" coords="141,45,225,77" href="#value_row" title="value_row"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="insert_stmt">insert_stmt:</a></p><img border="0" src="diagram/insert_stmt.svg" height="211" width="819" usemap="#insert_stmt.map"><map name="insert_stmt.map"><area shape="rect" coords="51,33,201,65" href="#common_table_stmt" title="common_table_stmt"><area shape="rect" coords="407,1,503,33" href="#table_name" title="table_name"><area shape="rect" coords="601,33,691,65" href="#table_alias" title="table_alias"><area shape="rect" coords="109,143,217,175" href="#column_name" title="column_name"><area shape="rect" coords="323,143,433,175" href="#values_clause" title="values_clause"><area shape="rect" coords="473,175,583,207" href="#upsert_clause" title="upsert_clause"><area shape="rect" coords="643,175,769,207" href="#returning_clause" title="returning_clause"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#sql_stmt" title="sql_stmt">sql_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="returning_clause">returning_clause:</a></p><img border="0" src="diagram/returning_clause.svg" height="81" width="443" usemap="#returning_clause.map"><map name="returning_clause.map"><area shape="rect" coords="169,45,393,77" href="#returning_clause_result_column" title="returning_clause_result_column"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#delete_stmt" title="delete_stmt">delete_stmt</a></li>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="upsert_update">upsert_update:</a></p><img border="0" src="diagram/upsert_update.svg" height="81" width="351" usemap="#upsert_update.map"><map name="upsert_update.map"><area shape="rect" coords="49,1,157,33" href="#column_name" title="column_name"><area shape="rect" coords="49,45,183,77" href="#column_name_list" title="column_name_list"><area shape="rect" coords="273,1,321,33" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#upsert_clause" title="upsert_clause">upsert_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="upsert_clause">upsert_clause:</a></p><img border="0" src="diagram/upsert_clause.svg" height="315" width="777" usemap="#upsert_clause.map"><map name="upsert_clause.map"><area shape="rect" coords="285,45,409,77" href="#indexed_column" title="indexed_column"><area shape="rect" coords="605,77,653,109" href="#expr" title="expr"><area shape="rect" coords="395,247,509,279" href="#upsert_update" title="upsert_update"><area shape="rect" coords="659,279,707,311" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="select_stmt_core">select_stmt_core:</a></p><img border="0" src="diagram/select_stmt_core.svg" height="113" width="563" usemap="#select_stmt_core.map"><map name="select_stmt_core.map"><area shape="rect" coords="49,45,141,77" href="#select_core" title="select_core"><area shape="rect" coords="49,1,197,33" href="#compound_operator" title="compound_operator"><area shape="rect" coords="257,77,371,109" href="#order_by_stmt" title="order_by_stmt"><area shape="rect" coords="431,77,513,109" href="#limit_stmt" title="limit_stmt"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#common_table_expression" title="common_table_expression">common_table_expression</a></li>
+            <li><a href="#select_stmt" title="select_stmt">select_stmt</a></li>
+            <li><a href="#subquery" title="subquery">subquery</a></li>
+            <li><a href="#table_or_subquery" title="table_or_subquery">table_or_subquery</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="select_stmt">select_stmt:</a></p><img border="0" src="diagram/select_stmt.svg" height="69" width="397" usemap="#select_stmt.map"><map name="select_stmt.map"><area shape="rect" coords="49,33,199,65" href="#common_table_stmt" title="common_table_stmt"><area shape="rect" coords="239,1,367,33" href="#select_stmt_core" title="select_stmt_core"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#sql_stmt" title="sql_stmt">sql_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="join_clause">join_clause:</a></p><img border="0" src="diagram/join_clause.svg" height="69" width="699" usemap="#join_clause.map"><map name="join_clause.map"><area shape="rect" coords="29,17,169,49" href="#table_or_subquery" title="table_or_subquery"><area shape="rect" coords="229,17,335,49" href="#join_operator" title="join_operator"><area shape="rect" coords="355,17,495,49" href="#table_or_subquery" title="table_or_subquery"><area shape="rect" coords="515,17,629,49" href="#join_constraint" title="join_constraint"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_core" title="select_core">select_core</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="select_core">select_core:</a></p><img border="0" src="diagram/select_core.svg" height="315" width="957" usemap="#select_core.map"><map name="select_core.map"><area shape="rect" coords="285,45,395,77" href="#result_column" title="result_column"><area shape="rect" coords="555,77,695,109" href="#table_or_subquery" title="table_or_subquery"><area shape="rect" coords="555,121,647,153" href="#join_clause" title="join_clause"><area shape="rect" coords="865,77,913,109" href="#expr" title="expr"><area shape="rect" coords="637,231,685,263" href="#expr" title="expr"><area shape="rect" coords="839,263,887,295" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_stmt_core" title="select_stmt_core">select_stmt_core</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="table_or_subquery">table_or_subquery:</a></p><img border="0" src="diagram/table_or_subquery.svg" height="81" width="527" usemap="#table_or_subquery.map"><map name="table_or_subquery.map"><area shape="rect" coords="49,1,145,33" href="#table_name" title="table_name"><area shape="rect" coords="95,45,223,77" href="#select_stmt_core" title="select_stmt_core"><area shape="rect" coords="387,33,477,65" href="#table_alias" title="table_alias"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#join_clause" title="join_clause">join_clause</a></li>
+            <li><a href="#select_core" title="select_core">select_core</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="result_column">result_column:</a></p><img border="0" src="diagram/result_column.svg" height="145" width="367" usemap="#result_column.map"><map name="result_column.map"><area shape="rect" coords="69,33,165,65" href="#table_name" title="table_name"><area shape="rect" coords="49,77,97,109" href="#expr" title="expr"><area shape="rect" coords="195,109,297,141" href="#column_alias" title="column_alias"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_core" title="select_core">select_core</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="returning_clause_result_column">returning_clause_result_column:</a></p><img border="0" src="diagram/returning_clause_result_column.svg" height="113" width="367" usemap="#returning_clause_result_column.map"><map name="returning_clause_result_column.map"><area shape="rect" coords="49,45,97,77" href="#expr" title="expr"><area shape="rect" coords="195,77,297,109" href="#column_alias" title="column_alias"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#returning_clause" title="returning_clause">returning_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="join_operator">join_operator:</a></p><img border="0" src="diagram/join_operator.svg" height="201" width="403"><p>referenced by:
+         
+         <ul>
+            <li><a href="#join_clause" title="join_clause">join_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="join_constraint">join_constraint:</a></p><img border="0" src="diagram/join_constraint.svg" height="37" width="167" usemap="#join_constraint.map"><map name="join_constraint.map"><area shape="rect" coords="89,1,137,33" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#join_clause" title="join_clause">join_clause</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="compound_operator">compound_operator:</a></p><img border="0" src="diagram/compound_operator.svg" height="157" width="269"><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_stmt_core" title="select_stmt_core">select_stmt_core</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="update_set_subclause">update_set_subclause:</a></p><img border="0" src="diagram/update_set_subclause.svg" height="81" width="351" usemap="#update_set_subclause.map"><map name="update_set_subclause.map"><area shape="rect" coords="49,1,157,33" href="#column_name" title="column_name"><area shape="rect" coords="49,45,183,77" href="#column_name_list" title="column_name_list"><area shape="rect" coords="273,1,321,33" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="update_stmt">update_stmt:</a></p><img border="0" src="diagram/update_stmt.svg" height="243" width="803" usemap="#update_stmt.map"><map name="update_stmt.map"><area shape="rect" coords="49,77,199,109" href="#common_table_stmt" title="common_table_stmt"><area shape="rect" coords="333,45,491,77" href="#qualified_table_name" title="qualified_table_name"><area shape="rect" coords="595,45,759,77" href="#update_set_subclause" title="update_set_subclause"><area shape="rect" coords="209,163,349,195" href="#table_or_subquery" title="table_or_subquery"><area shape="rect" coords="209,207,301,239" href="#join_clause" title="join_clause"><area shape="rect" coords="519,163,567,195" href="#expr" title="expr"><area shape="rect" coords="627,163,753,195" href="#returning_clause" title="returning_clause"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#sql_stmt" title="sql_stmt">sql_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="column_name_list">column_name_list:</a></p><img border="0" src="diagram/column_name_list.svg" height="81" width="299" usemap="#column_name_list.map"><map name="column_name_list.map"><area shape="rect" coords="95,45,203,77" href="#column_name" title="column_name"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#update_set_subclause" title="update_set_subclause">update_set_subclause</a></li>
+            <li><a href="#upsert_update" title="upsert_update">upsert_update</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="qualified_table_name">qualified_table_name:</a></p><img border="0" src="diagram/qualified_table_name.svg" height="69" width="363" usemap="#qualified_table_name.map"><map name="qualified_table_name.map"><area shape="rect" coords="29,1,125,33" href="#table_name" title="table_name"><area shape="rect" coords="223,33,313,65" href="#table_alias" title="table_alias"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#delete_stmt" title="delete_stmt">delete_stmt</a></li>
+            <li><a href="#update_stmt" title="update_stmt">update_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="order_by_stmt">order_by_stmt:</a></p><img border="0" src="diagram/order_by_stmt.svg" height="81" width="355" usemap="#order_by_stmt.map"><map name="order_by_stmt.map"><area shape="rect" coords="195,45,305,77" href="#ordering_term" title="ordering_term"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_stmt_core" title="select_stmt_core">select_stmt_core</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="limit_stmt">limit_stmt:</a></p><img border="0" src="diagram/limit_stmt.svg" height="69" width="387" usemap="#limit_stmt.map"><map name="limit_stmt.map"><area shape="rect" coords="109,1,157,33" href="#expr" title="expr"><area shape="rect" coords="289,33,337,65" href="#expr" title="expr"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#select_stmt_core" title="select_stmt_core">select_stmt_core</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="ordering_term">ordering_term:</a></p><img border="0" src="diagram/ordering_term.svg" height="113" width="489" usemap="#ordering_term.map"><map name="ordering_term.map"><area shape="rect" coords="29,1,77,33" href="#expr" title="expr"><area shape="rect" coords="117,33,195,65" href="#asc_desc" title="asc_desc"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#order_by_stmt" title="order_by_stmt">order_by_stmt</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="asc_desc">asc_desc:</a></p><img border="0" src="diagram/asc_desc.svg" height="81" width="155"><p>referenced by:
+         
+         <ul>
+            <li><a href="#ordering_term" title="ordering_term">ordering_term</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="function_keyword">function_keyword:</a></p><img border="0" src="diagram/function_keyword.svg" height="101" width="179"><p>referenced by:
+         
+         <ul>
+            <li><a href="#function_name" title="function_name">function_name</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="function_name">function_name:</a></p><img border="0" src="diagram/function_name.svg" height="81" width="231" usemap="#function_name.map"><map name="function_name.map"><area shape="rect" coords="49,1,141,33" href="#IDENTIFIER" title="IDENTIFIER"><area shape="rect" coords="49,45,181,77" href="#function_keyword" title="function_keyword"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#function_call" title="function_call">function_call</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="table_name">table_name:</a></p><img border="0" src="diagram/table_name.svg" height="37" width="151" usemap="#table_name.map"><map name="table_name.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#column_ref" title="column_ref">column_ref</a></li>
+            <li><a href="#cte_table_name" title="cte_table_name">cte_table_name</a></li>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+            <li><a href="#qualified_table_name" title="qualified_table_name">qualified_table_name</a></li>
+            <li><a href="#result_column" title="result_column">result_column</a></li>
+            <li><a href="#table_or_subquery" title="table_or_subquery">table_or_subquery</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="table_alias">table_alias:</a></p><img border="0" src="diagram/table_alias.svg" height="37" width="151" usemap="#table_alias.map"><map name="table_alias.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+            <li><a href="#qualified_table_name" title="qualified_table_name">qualified_table_name</a></li>
+            <li><a href="#table_or_subquery" title="table_or_subquery">table_or_subquery</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="column_name">column_name:</a></p><img border="0" src="diagram/column_name.svg" height="37" width="151" usemap="#column_name.map"><map name="column_name.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#column_name_list" title="column_name_list">column_name_list</a></li>
+            <li><a href="#column_ref" title="column_ref">column_ref</a></li>
+            <li><a href="#cte_table_name" title="cte_table_name">cte_table_name</a></li>
+            <li><a href="#indexed_column" title="indexed_column">indexed_column</a></li>
+            <li><a href="#insert_stmt" title="insert_stmt">insert_stmt</a></li>
+            <li><a href="#update_set_subclause" title="update_set_subclause">update_set_subclause</a></li>
+            <li><a href="#upsert_update" title="upsert_update">upsert_update</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="column_alias">column_alias:</a></p><img border="0" src="diagram/column_alias.svg" height="37" width="151" usemap="#column_alias.map"><map name="column_alias.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#result_column" title="result_column">result_column</a></li>
+            <li><a href="#returning_clause_result_column" title="returning_clause_result_column">returning_clause_result_column</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="collation_name">collation_name:</a></p><img border="0" src="diagram/collation_name.svg" height="37" width="151" usemap="#collation_name.map"><map name="collation_name.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>referenced by:
+         
+         <ul>
+            <li><a href="#expr" title="expr">expr</a></li>
+         </ul>
+      </p><br><p style="font-size: 14px; font-weight:bold"><a name="index_name">index_name:</a></p><img border="0" src="diagram/index_name.svg" height="37" width="151" usemap="#index_name.map"><map name="index_name.map"><area shape="rect" coords="29,1,121,33" href="#IDENTIFIER" title="IDENTIFIER"></map><p>no references</p><br><p style="font-size: 14px; font-weight:bold"><a name="EOF">EOF:</a></p><img border="0" src="diagram/EOF.svg" height="37" width="97"><p>referenced by:
+         
+         <ul>
+            <li><a href="#statements" title="statements">statements</a></li>
+         </ul>
+      </p><br><hr>
+      <p>
+         <table border="0" class="signature">
+            <tr>
+               <td style="width: 100%">&nbsp;</td>
+               <td valign="top">
+                  <nobr class="signature">... generated by <a name="Railroad-Diagram-Generator" class="signature" title="https://www.bottlecaps.de/rr/ui" href="https://www.bottlecaps.de/rr/ui" target="_blank">RR - Railroad Diagram Generator</a></nobr>
+               </td>
+               <td><a name="Railroad-Diagram-Generator" title="https://www.bottlecaps.de/rr/ui" href="https://www.bottlecaps.de/rr/ui" target="_blank"><img border="0" src="diagram/rr-2.1.svg" height="16" width="16"></a></td>
+            </tr>
+         </table>
+      </p>
+   </body>
+</html>
