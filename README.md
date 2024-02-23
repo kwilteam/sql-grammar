@@ -23,3 +23,4 @@
 - rename Lexer and Parser to `SQLLexer` and `SQLParser`
 - refactor `expr`, reflect Postgres operator precedence
 - discard `collation` in `ordering_term`
+- remove blob literal lexer rule
