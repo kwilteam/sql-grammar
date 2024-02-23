@@ -132,8 +132,6 @@ BIND_PARAMETER: [@$] IDENTIFIER;
 
 STRING_LITERAL: '\'' ( ~'\'' | '\'\'')* '\'';
 
-BLOB_LITERAL: 'X' STRING_LITERAL;
-
 SINGLE_LINE_COMMENT: '--' ~[\r\n]* (('\r'? '\n') | EOF) -> channel(HIDDEN);
 
 MULTILINE_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
