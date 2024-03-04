@@ -265,14 +265,18 @@ select_stmt:
     select_stmt_core
 ;
 
-join_clause:
-    table_or_subquery (join_operator table_or_subquery join_constraint)*
+join_relation:
+    join_operator right_relation=table_or_subquery join_constraint
+;
+
+relation:
+    table_or_subquery join_relation*
 ;
 
 select_core:
     SELECT_ DISTINCT_?
     result_column (COMMA result_column)*
-    (FROM_ (table_or_subquery | join_clause))?
+    (FROM_ relation)?
     (WHERE_ whereExpr=expr)?
     (
       GROUP_ BY_ groupByExpr+=expr (COMMA groupByExpr+=expr)*
@@ -320,7 +324,7 @@ update_stmt:
     UPDATE_
     qualified_table_name
     SET_ update_set_subclause (COMMA update_set_subclause)*
-    (FROM_ (table_or_subquery | join_clause))?
+    (FROM_ relation)?
     (WHERE_ expr)?
     returning_clause?
 ;
