@@ -57,18 +57,22 @@ cte_table_name:
 ;
 
 common_table_expression:
-    cte_table_name AS_ OPEN_PAR select_stmt_core CLOSE_PAR
+    cte_table_name AS_ OPEN_PAR select_stmt_no_cte CLOSE_PAR
 ;
 
 common_table_stmt: //additional structures
     WITH_ common_table_expression (COMMA common_table_expression)*
 ;
 
-delete_stmt:
-    common_table_stmt?
+delete_core:
     DELETE_ FROM_ qualified_table_name
     (WHERE_ expr)?
     returning_clause?
+;
+
+delete_stmt:
+    common_table_stmt?
+    delete_core
 ;
 
 variable:
@@ -173,7 +177,7 @@ expr:
 ;
 
 subquery:
-    OPEN_PAR select_stmt_core CLOSE_PAR // note: don't support with clause in subquery
+    OPEN_PAR select_stmt_no_cte CLOSE_PAR // note: don't support with clause in subquery
 ;
 
 expr_list:
@@ -220,14 +224,18 @@ values_clause:
     VALUES_ value_row (COMMA value_row)*
 ;
 
-insert_stmt:
-    common_table_stmt?
+insert_core:
     INSERT_ INTO_ table_name
     (AS_ table_alias)?
     (OPEN_PAR column_name ( COMMA column_name)* CLOSE_PAR)?
     values_clause
     upsert_clause?
     returning_clause?
+;
+
+insert_stmt:
+    common_table_stmt?
+    insert_core
 ;
 
 returning_clause:
@@ -253,7 +261,7 @@ upsert_clause:
     )
 ;
 
-select_stmt_core:
+select_stmt_no_cte:
     select_core
     (compound_operator select_core)*
     order_by_stmt?
@@ -262,7 +270,7 @@ select_stmt_core:
 
 select_stmt:
     common_table_stmt?
-    select_stmt_core
+    select_stmt_no_cte
 ;
 
 join_relation:
@@ -286,7 +294,7 @@ select_core:
 
 table_or_subquery:
     table_name (AS_ table_alias)?
-    | OPEN_PAR select_stmt_core CLOSE_PAR (AS_ table_alias)?
+    | OPEN_PAR select_stmt_no_cte CLOSE_PAR (AS_ table_alias)?
 ;
 
 result_column:
@@ -319,14 +327,18 @@ update_set_subclause:
     (column_name | column_name_list) ASSIGN expr
 ;
 
-update_stmt:
-    common_table_stmt?
+update_core:
     UPDATE_
     qualified_table_name
     SET_ update_set_subclause (COMMA update_set_subclause)*
     (FROM_ relation)?
     (WHERE_ expr)?
     returning_clause?
+;
+
+update_stmt:
+    common_table_stmt?
+    update_core
 ;
 
 column_name_list:
