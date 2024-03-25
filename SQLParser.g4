@@ -57,7 +57,7 @@ cte_table_name:
 ;
 
 common_table_expression:
-    cte_table_name AS_ OPEN_PAR select_stmt_no_cte CLOSE_PAR
+    cte_table_name AS_ OPEN_PAR select_core CLOSE_PAR
 ;
 
 common_table_stmt: //additional structures
@@ -177,7 +177,7 @@ expr:
 ;
 
 subquery:
-    OPEN_PAR select_stmt_no_cte CLOSE_PAR // note: don't support with clause in subquery
+    OPEN_PAR select_core CLOSE_PAR // note: don't support with clause in subquery
 ;
 
 expr_list:
@@ -261,16 +261,16 @@ upsert_clause:
     )
 ;
 
-select_stmt_no_cte:
-    select_core
-    (compound_operator select_core)*
+select_core:
+    simple_select
+    (compound_operator simple_select)*
     order_by_stmt?
     limit_stmt?
 ;
 
 select_stmt:
     common_table_stmt?
-    select_stmt_no_cte
+    select_core
 ;
 
 join_relation:
@@ -281,7 +281,7 @@ relation:
     table_or_subquery join_relation*
 ;
 
-select_core:
+simple_select:
     SELECT_ DISTINCT_?
     result_column (COMMA result_column)*
     (FROM_ relation)?
@@ -294,7 +294,7 @@ select_core:
 
 table_or_subquery:
     table_name (AS_ table_alias)?
-    | OPEN_PAR select_stmt_no_cte CLOSE_PAR (AS_ table_alias)?
+    | OPEN_PAR select_core CLOSE_PAR (AS_ table_alias)?
 ;
 
 result_column:
