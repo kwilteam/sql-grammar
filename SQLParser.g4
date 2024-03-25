@@ -57,18 +57,22 @@ cte_table_name:
 ;
 
 common_table_expression:
-    cte_table_name AS_ OPEN_PAR select_stmt_core CLOSE_PAR
+    cte_table_name AS_ OPEN_PAR select_core CLOSE_PAR
 ;
 
 common_table_stmt: //additional structures
     WITH_ common_table_expression (COMMA common_table_expression)*
 ;
 
-delete_stmt:
-    common_table_stmt?
+delete_core:
     DELETE_ FROM_ qualified_table_name
     (WHERE_ expr)?
     returning_clause?
+;
+
+delete_stmt:
+    common_table_stmt?
+    delete_core
 ;
 
 variable:
@@ -173,7 +177,7 @@ expr:
 ;
 
 subquery:
-    OPEN_PAR select_stmt_core CLOSE_PAR // note: don't support with clause in subquery
+    OPEN_PAR select_core CLOSE_PAR // note: don't support with clause in subquery
 ;
 
 expr_list:
@@ -220,14 +224,18 @@ values_clause:
     VALUES_ value_row (COMMA value_row)*
 ;
 
-insert_stmt:
-    common_table_stmt?
+insert_core:
     INSERT_ INTO_ table_name
     (AS_ table_alias)?
     (OPEN_PAR column_name ( COMMA column_name)* CLOSE_PAR)?
     values_clause
     upsert_clause?
     returning_clause?
+;
+
+insert_stmt:
+    common_table_stmt?
+    insert_core
 ;
 
 returning_clause:
@@ -253,26 +261,30 @@ upsert_clause:
     )
 ;
 
-select_stmt_core:
-    select_core
-    (compound_operator select_core)*
+select_core:
+    simple_select
+    (compound_operator simple_select)*
     order_by_stmt?
     limit_stmt?
 ;
 
 select_stmt:
     common_table_stmt?
-    select_stmt_core
+    select_core
 ;
 
-join_clause:
-    table_or_subquery (join_operator table_or_subquery join_constraint)*
+join_relation:
+    join_operator right_relation=table_or_subquery join_constraint
 ;
 
-select_core:
+relation:
+    table_or_subquery join_relation*
+;
+
+simple_select:
     SELECT_ DISTINCT_?
     result_column (COMMA result_column)*
-    (FROM_ (table_or_subquery | join_clause))?
+    (FROM_ relation)?
     (WHERE_ whereExpr=expr)?
     (
       GROUP_ BY_ groupByExpr+=expr (COMMA groupByExpr+=expr)*
@@ -282,7 +294,7 @@ select_core:
 
 table_or_subquery:
     table_name (AS_ table_alias)?
-    | OPEN_PAR select_stmt_core CLOSE_PAR (AS_ table_alias)?
+    | OPEN_PAR select_core CLOSE_PAR (AS_ table_alias)?
 ;
 
 result_column:
@@ -315,14 +327,18 @@ update_set_subclause:
     (column_name | column_name_list) ASSIGN expr
 ;
 
-update_stmt:
-    common_table_stmt?
+update_core:
     UPDATE_
     qualified_table_name
     SET_ update_set_subclause (COMMA update_set_subclause)*
-    (FROM_ (table_or_subquery | join_clause))?
+    (FROM_ relation)?
     (WHERE_ expr)?
     returning_clause?
+;
+
+update_stmt:
+    common_table_stmt?
+    update_core
 ;
 
 column_name_list:
