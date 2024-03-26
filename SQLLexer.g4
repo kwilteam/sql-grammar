@@ -116,13 +116,6 @@ WHEN_:              'WHEN';
 WHERE_:             'WHERE';
 WITH_:              'WITH';
 
-IDENTIFIER:
-    '"' (~'"' | '""')* '"' // Delimited identifiers
-    | '`' (~'`' | '``')* '`'
-    | '[' ~']'* ']'
-    | [A-Z_] [A-Z_0-9]* // Ordinary identifiers
-; // TODO check: needs more chars in set
-
 // literals
 
 BOOLEAN_LITERAL:
@@ -139,10 +132,17 @@ BLOB_LITERAL:
 ;
 
 TEXT_LITERAL:
-    '\'' (~['\r\n\\] | ('\\' .))* '\''
+    '\'' ( ESCAPED_QUOTE | ~('\'' | '\\') )* '\''
 ;
 
-NULL_LITERAL: 'NULL';
+NULL_LITERAL: 'null';
+
+IDENTIFIER:
+    '"' (~'"' | '""')* '"' // Delimited identifiers
+    | '`' (~'`' | '``')* '`'
+    | '[' ~']'* ']'
+    | [A-Z_] [A-Z_0-9]* // Ordinary identifiers
+; // TODO check: needs more chars in set
 
 BIND_PARAMETER: [@$] IDENTIFIER;
 
@@ -156,3 +156,6 @@ UNEXPECTED_CHAR: .;
 
 fragment HEX_DIGIT: [0-9A-F];
 fragment DIGIT:     [0-9];
+fragment ESCAPED_QUOTE:
+    '\'' '\''
+;
