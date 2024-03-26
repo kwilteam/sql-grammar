@@ -132,7 +132,7 @@ BLOB_LITERAL:
 ;
 
 TEXT_LITERAL:
-    '\'' ( ESCAPED_QUOTE | ~('\'' | '\\') )* '\''
+    '\'' ( ~'\'' | '\'\'')* '\''
 ;
 
 NULL_LITERAL: 'null';
@@ -154,8 +154,4 @@ SPACES: [ \u000B\t\r\n] -> channel(HIDDEN);
 
 UNEXPECTED_CHAR: .;
 
-fragment HEX_DIGIT: [0-9A-F];
 fragment DIGIT:     [0-9];
-fragment ESCAPED_QUOTE:
-    '\'' '\''
-;
