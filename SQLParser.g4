@@ -168,7 +168,7 @@ expr:
     // comparison
     | left=expr comparisonOperator right=expr                            #comparison_expr
     //| left=expr comparisonOperator right=subquery                      #scalar_subquery_expr
-    | expr IS_ NOT_? (DISTINCT_ FROM_ expr | boolean_value | NULL_)      #is_expr
+    | expr IS_ NOT_? (DISTINCT_ FROM_ expr)      #is_expr
     | expr (ISNULL_ | NOTNULL_)                                          #null_expr
     // logical expressions
     | <assoc=right> NOT_ expr                                             #logical_not_expr
@@ -196,24 +196,12 @@ type_cast:
     TYPE_CAST cast_type
 ;
 
-boolean_value:
-    TRUE_
-    | FALSE_
-;
-
-string_value:
-    STRING_LITERAL
-;
-
-numeric_value:
-    NUMERIC_LITERAL
-;
-
 literal:
-    NULL_
-    | boolean_value
-    | string_value
-    | numeric_value
+    TEXT_LITERAL
+    | BOOLEAN_LITERAL
+    | NUMERIC_LITERAL
+    | NULL_LITERAL
+    | BLOB_LITERAL
 ;
 
 value_row:
