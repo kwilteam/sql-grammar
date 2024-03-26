@@ -143,7 +143,11 @@ Type cast can only be applied to:
     function_call
 */
 expr:
-    literal type_cast?                                                   #literal_expr
+    TEXT_LITERAL type_cast?                                              #text_literal_expr
+    | BOOLEAN_LITERAL type_cast?                                         #boolean_literal_expr
+    | NUMERIC_LITERAL type_cast?                                         #numeric_literal_expr
+    | NULL_LITERAL type_cast?                                            #null_literal_expr
+    | BLOB_LITERAL type_cast?                                            #blob_literal_expr
     | variable type_cast?                                                #variable_expr
     | column_ref type_cast?                                              #column_expr
     | <assoc=right>  operator=(MINUS | PLUS) expr                        #unary_expr
@@ -168,7 +172,7 @@ expr:
     // comparison
     | left=expr comparisonOperator right=expr                            #comparison_expr
     //| left=expr comparisonOperator right=subquery                      #scalar_subquery_expr
-    | expr IS_ NOT_? (DISTINCT_ FROM_ expr | boolean_value | NULL_)      #is_expr
+    | expr IS_ NOT_? ((DISTINCT_ FROM_ expr)|BOOLEAN_LITERAL|NULL_LITERAL)#is_expr
     | expr (ISNULL_ | NOTNULL_)                                          #null_expr
     // logical expressions
     | <assoc=right> NOT_ expr                                             #logical_not_expr
@@ -194,26 +198,6 @@ cast_type:
 
 type_cast:
     TYPE_CAST cast_type
-;
-
-boolean_value:
-    TRUE_
-    | FALSE_
-;
-
-string_value:
-    STRING_LITERAL
-;
-
-numeric_value:
-    NUMERIC_LITERAL
-;
-
-literal:
-    NULL_
-    | boolean_value
-    | string_value
-    | numeric_value
 ;
 
 value_row:
